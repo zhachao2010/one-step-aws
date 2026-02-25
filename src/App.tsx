@@ -50,11 +50,20 @@ export default function App() {
     }
   }, [t]);
 
-  // Check for initial deep link URL stored by Rust before React mounted
+  // Check for initial deep link URL stored by Rust (with retry for timing edge cases)
   useEffect(() => {
-    getInitialUrl().then((url) => {
-      if (url) handleDeepLink(url);
-    });
+    let cancelled = false;
+    const tryGetUrl = async (retries: number) => {
+      const url = await getInitialUrl();
+      if (cancelled) return;
+      if (url) {
+        handleDeepLink(url);
+      } else if (retries > 0) {
+        setTimeout(() => tryGetUrl(retries - 1), 300);
+      }
+    };
+    tryGetUrl(5);
+    return () => { cancelled = true; };
   }, [handleDeepLink]);
 
   // Listen for deep links while the app is already running

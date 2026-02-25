@@ -1,0 +1,48 @@
+{
+  "app_name": "OneStepAWS",
+  "project_info": {
+    "title": "Project Information",
+    "file_count": "Files",
+    "total_size": "Total Size",
+    "expires": "Download Deadline",
+    "days_left": "{{days}} days left",
+    "expired": "Expired",
+    "save_to": "Save to",
+    "change": "Change",
+    "start_download": "Start Download",
+    "resume_download": "Resume Download"
+  },
+  "download": {
+    "title": "Downloading",
+    "overall_progress": "Overall Progress",
+    "speed": "Speed",
+    "remaining": "Remaining",
+    "about_minutes": "~{{minutes}} min",
+    "pause": "Pause",
+    "resume": "Resume",
+    "cancel": "Cancel",
+    "status_done": "Done",
+    "status_downloading": "Downloading",
+    "status_waiting": "Waiting",
+    "status_failed": "Failed",
+    "cancel_confirm": "Are you sure you want to cancel the download?"
+  },
+  "verify": {
+    "title": "Download & Verification Complete",
+    "total": "Total",
+    "success": "Success",
+    "failed": "Failed",
+    "items": "",
+    "md5_match": "MD5 Match",
+    "md5_mismatch": "MD5 Mismatch",
+    "md5_none": "No MD5 Info",
+    "retry_failed": "Retry Failed Files",
+    "open_folder": "Open Folder"
+  },
+  "error": {
+    "expired_title": "Link Expired",
+    "expired_message": "This download link expired on {{date}}. Please contact the data provider.",
+    "connection_failed": "Failed to connect to S3. Please check your network.",
+    "invalid_url": "Invalid download link."
+  }
+}

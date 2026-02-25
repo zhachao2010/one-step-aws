@@ -1,0 +1,48 @@
+{
+  "app_name": "OneStepAWS",
+  "project_info": {
+    "title": "项目信息",
+    "file_count": "文件数",
+    "total_size": "总大小",
+    "expires": "下载截止日期",
+    "days_left": "剩余{{days}}天",
+    "expired": "已过期",
+    "save_to": "保存至",
+    "change": "更改",
+    "start_download": "开始下载",
+    "resume_download": "恢复下载"
+  },
+  "download": {
+    "title": "下载中",
+    "overall_progress": "整体进度",
+    "speed": "速度",
+    "remaining": "剩余时间",
+    "about_minutes": "约{{minutes}}分钟",
+    "pause": "暂停",
+    "resume": "继续",
+    "cancel": "取消",
+    "status_done": "完成",
+    "status_downloading": "下载中",
+    "status_waiting": "等待",
+    "status_failed": "失败",
+    "cancel_confirm": "确定要取消下载吗？"
+  },
+  "verify": {
+    "title": "下载与校验完成",
+    "total": "总计",
+    "success": "成功",
+    "failed": "失败",
+    "items": "个",
+    "md5_match": "MD5一致",
+    "md5_mismatch": "MD5不一致",
+    "md5_none": "无MD5信息",
+    "retry_failed": "重新下载失败文件",
+    "open_folder": "打开文件夹"
+  },
+  "error": {
+    "expired_title": "链接已过期",
+    "expired_message": "此下载链接已于{{date}}过期。请联系数据提供方。",
+    "connection_failed": "无法连接到S3，请检查网络连接。",
+    "invalid_url": "无效的下载链接。"
+  }
+}

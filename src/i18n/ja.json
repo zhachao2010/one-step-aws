@@ -1,0 +1,48 @@
+{
+  "app_name": "OneStepAWS",
+  "project_info": {
+    "title": "プロジェクト情報",
+    "file_count": "ファイル数",
+    "total_size": "合計サイズ",
+    "expires": "ダウンロード期限",
+    "days_left": "残り{{days}}日",
+    "expired": "期限切れ",
+    "save_to": "保存先",
+    "change": "変更",
+    "start_download": "ダウンロード開始",
+    "resume_download": "ダウンロード再開"
+  },
+  "download": {
+    "title": "ダウンロード中",
+    "overall_progress": "全体進捗",
+    "speed": "速度",
+    "remaining": "残り時間",
+    "about_minutes": "約{{minutes}}分",
+    "pause": "一時停止",
+    "resume": "再開",
+    "cancel": "キャンセル",
+    "status_done": "完了",
+    "status_downloading": "ダウンロード中",
+    "status_waiting": "待機",
+    "status_failed": "失敗",
+    "cancel_confirm": "ダウンロードを中止してもよろしいですか？"
+  },
+  "verify": {
+    "title": "ダウンロード＆検証完了",
+    "total": "合計",
+    "success": "成功",
+    "failed": "失敗",
+    "items": "件",
+    "md5_match": "MD5一致",
+    "md5_mismatch": "MD5不一致",
+    "md5_none": "MD5情報なし",
+    "retry_failed": "失敗ファイルを再ダウンロード",
+    "open_folder": "フォルダを開く"
+  },
+  "error": {
+    "expired_title": "リンクの有効期限切れ",
+    "expired_message": "このダウンロードリンクは{{date}}に有効期限が切れました。データ提供元にお問い合わせください。",
+    "connection_failed": "S3への接続に失敗しました。ネットワーク接続をご確認ください。",
+    "invalid_url": "無効なダウンロードリンクです。"
+  }
+}

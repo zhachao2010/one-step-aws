@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { parseUrlParams, type DownloadParams } from "./lib/url-parser";
-import { createS3Client, listProjectFiles, type S3FileInfo } from "./lib/s3-browser";
+import { parseUrlParams } from "./lib/url-parser";
+import { createS3Client, listProjectFiles } from "./lib/s3-browser";
 import { runDownload } from "./lib/download-engine";
-import type { FileProgress, OverallProgress, VerifyResult as VerifyResultType } from "./lib/types";
-import ProjectInfo from "./pages/ProjectInfo";
+import type { DownloadParams, S3FileInfo, FileProgress, OverallProgress, VerifyResult as VerifyResultType } from "./lib/types";
 import DownloadProgress from "./pages/DownloadProgress";
 import VerifyResult from "./pages/VerifyResult";
-import FallbackDownload from "./pages/FallbackDownload";
+import PresignedDownload from "./pages/PresignedDownload";
+import StreamingDownload from "./pages/StreamingDownload";
 import type { S3Client } from "@aws-sdk/client-s3";
 
 interface ProjectData {
@@ -30,6 +30,7 @@ export default function App() {
   const [projectInfo, setProjectInfo] = useState<ProjectData | null>(null);
   const [error, setError] = useState("");
   const [results, setResults] = useState<VerifyResultType[]>([]);
+  const [hasCors, setHasCors] = useState(false);
   const [overall, setOverall] = useState<OverallProgress>({
     totalFiles: 0, completedFiles: 0,
     totalBytes: 0, downloadedBytes: 0,
@@ -39,49 +40,60 @@ export default function App() {
   const clientRef = useRef<S3Client | null>(null);
   const dirHandleRef = useRef<FileSystemDirectoryHandle | null>(null);
 
-  const loadProject = useCallback(async (p: DownloadParams) => {
-    try {
-      if (p.expires) {
-        const expDate = new Date(p.expires);
-        if (expDate < new Date()) {
-          setError(t("error.expired_message", { date: p.expires }));
-          setPage("error");
-          return;
-        }
-      }
-
-      const client = createS3Client(p.accessKey, p.secretKey, p.region);
-      clientRef.current = client;
-      const files = await listProjectFiles(client, p.bucket, p.project);
-      const totalSize = files.filter((f) => !f.isMd5File).reduce((sum, f) => sum + f.size, 0);
-
-      setProjectInfo({
-        project: p.project,
-        bucket: p.bucket,
-        region: p.region,
-        expires: p.expires,
-        files,
-        totalSize,
-      });
-      setPage("project-info");
-    } catch (e) {
-      setError(String(e));
-      setPage("error");
-    }
-  }, [t]);
+  const buildProjectInfo = useCallback((p: DownloadParams, files: S3FileInfo[]): ProjectData => {
+    const totalSize = files.filter((f) => !f.isMd5File).reduce((sum, f) => sum + f.size, 0);
+    return {
+      project: p.project,
+      bucket: p.bucket,
+      region: p.region,
+      expires: p.expires,
+      files,
+      totalSize,
+    };
+  }, []);
 
   useEffect(() => {
-    try {
-      const p = parseUrlParams(window.location.search);
-      setParams(p);
-      loadProject(p);
-    } catch (e) {
-      setError(String(e));
-      setPage("error");
-    }
-  }, [loadProject]);
+    (async () => {
+      try {
+        const { params: p, manifest } = parseUrlParams(
+          window.location.search,
+          window.location.hash,
+        );
+        setParams(p);
 
-  const handleStartDownload = useCallback(async (dirHandle: FileSystemDirectoryHandle) => {
+        // Check expiry
+        if (p.expires) {
+          const expDate = new Date(p.expires);
+          if (expDate < new Date()) {
+            setError(t("error.expired_message", { date: p.expires }));
+            setPage("error");
+            return;
+          }
+        }
+
+        // If manifest is embedded in URL, use it directly (no CORS needed)
+        if (manifest && manifest.length > 0) {
+          setProjectInfo(buildProjectInfo(p, manifest));
+          setHasCors(false);
+          setPage("project-info");
+          return;
+        }
+
+        // No manifest — try S3 listing (needs CORS)
+        const client = createS3Client(p.accessKey, p.secretKey, p.region);
+        clientRef.current = client;
+        const files = await listProjectFiles(client, p.bucket, p.project);
+        setProjectInfo(buildProjectInfo(p, files));
+        setHasCors(true);
+        setPage("project-info");
+      } catch (e) {
+        setError(String(e));
+        setPage("error");
+      }
+    })();
+  }, [t, buildProjectInfo]);
+
+  const handleStartStreaming = useCallback(async (dirHandle: FileSystemDirectoryHandle) => {
     if (!params || !projectInfo || !clientRef.current) return;
     dirHandleRef.current = dirHandle;
     setPage("downloading");
@@ -116,7 +128,6 @@ export default function App() {
 
   const handleRetryFailed = useCallback(async () => {
     if (!params || !projectInfo || !clientRef.current || !dirHandleRef.current) return;
-    // Filter to only failed files for retry
     const failedKeys = new Set(
       results.filter((r) => r.status === "mismatch" || r.status === "error").map((r) => r.fileKey),
     );
@@ -147,7 +158,6 @@ export default function App() {
           setOverall(op);
         },
       });
-      // Merge retry results with previous successful results
       const successfulPrevious = results.filter(
         (r) => r.status === "match" || r.status === "no_md5",
       );
@@ -159,7 +169,6 @@ export default function App() {
     }
   }, [params, projectInfo, results]);
 
-  // Loading spinner
   if (page === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white text-gray-400">
@@ -171,7 +180,6 @@ export default function App() {
     );
   }
 
-  // Error page
   if (page === "error") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
@@ -195,16 +203,16 @@ export default function App() {
 
       <main className="flex-1 overflow-hidden">
         {page === "project-info" && params && projectInfo && (
-          supportsFileSystemAccess ? (
-            <ProjectInfo
+          hasCors && supportsFileSystemAccess ? (
+            <StreamingDownload
               project={projectInfo.project}
               expires={projectInfo.expires}
               files={projectInfo.files}
               totalSize={projectInfo.totalSize}
-              onStartDownload={handleStartDownload}
+              onStartDownload={handleStartStreaming}
             />
           ) : (
-            <FallbackDownload
+            <PresignedDownload
               params={params}
               files={projectInfo.files}
               project={projectInfo.project}

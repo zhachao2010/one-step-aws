@@ -14,7 +14,7 @@ interface Props {
   totalSize: number;
 }
 
-export default function FallbackDownload({
+export default function PresignedDownload({
   params,
   files,
   project,
@@ -78,18 +78,8 @@ export default function FallbackDownload({
         )}
       </div>
 
-      {/* Browser compatibility notice */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-        <p className="text-sm font-medium text-amber-800 mb-1">
-          {t("browser.unsupported_title")}
-        </p>
-        <p className="text-sm text-amber-700">
-          {t("browser.unsupported_message")}
-        </p>
-      </div>
-
-      <p className="text-sm font-medium text-gray-600 mb-2">
-        {t("browser.download_individual")}
+      <p className="text-sm text-gray-500 mb-3">
+        {t("browser.select_folder_desc")}
       </p>
 
       <div className="flex-1 overflow-y-auto border rounded mb-4">

@@ -10,7 +10,7 @@ interface Props {
   onStartDownload: (dirHandle: FileSystemDirectoryHandle) => void;
 }
 
-export default function ProjectInfo({
+export default function StreamingDownload({
   project,
   expires,
   files,

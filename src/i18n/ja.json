@@ -43,6 +43,17 @@
     "expired_title": "リンクの有効期限切れ",
     "expired_message": "このダウンロードリンクは{{date}}に有効期限が切れました。データ提供元にお問い合わせください。",
     "connection_failed": "S3への接続に失敗しました。ネットワーク接続をご確認ください。",
-    "invalid_url": "無効なダウンロードリンクです。"
+    "invalid_url": "無効なダウンロードリンクです。",
+    "missing_params": "ダウンロードリンクに必要なパラメータが不足しています。"
+  },
+  "browser": {
+    "select_folder": "保存先フォルダを選択",
+    "select_folder_desc": "ダウンロードするファイルの保存先を選択してください。",
+    "unsupported_title": "ブラウザの互換性に関するお知らせ",
+    "unsupported_message": "Chrome/Edgeをご利用いただくと、一括ダウンロードとMD5検証が可能です。",
+    "fallback_download": "ダウンロード",
+    "generating_link": "リンク生成中...",
+    "file_list": "ファイル一覧",
+    "download_individual": "個別ダウンロード"
   }
 }

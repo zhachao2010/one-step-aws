@@ -1,3 +1,4 @@
 node_modules/
 dist/
+dist-downloader/
 src-tauri/target/

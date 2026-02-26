@@ -43,6 +43,17 @@
     "expired_title": "链接已过期",
     "expired_message": "此下载链接已于{{date}}过期。请联系数据提供方。",
     "connection_failed": "无法连接到S3，请检查网络连接。",
-    "invalid_url": "无效的下载链接。"
+    "invalid_url": "无效的下载链接。",
+    "missing_params": "下载链接缺少必要参数。"
+  },
+  "browser": {
+    "select_folder": "选择保存文件夹",
+    "select_folder_desc": "请选择下载文件的保存位置。",
+    "unsupported_title": "浏览器兼容性提示",
+    "unsupported_message": "使用Chrome或Edge可实现批量下载和MD5校验。",
+    "fallback_download": "下载",
+    "generating_link": "正在生成链接...",
+    "file_list": "文件列表",
+    "download_individual": "逐个下载"
   }
 }

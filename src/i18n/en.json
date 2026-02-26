@@ -43,6 +43,17 @@
     "expired_title": "Link Expired",
     "expired_message": "This download link expired on {{date}}. Please contact the data provider.",
     "connection_failed": "Failed to connect to S3. Please check your network.",
-    "invalid_url": "Invalid download link."
+    "invalid_url": "Invalid download link.",
+    "missing_params": "The download link is missing required parameters."
+  },
+  "browser": {
+    "select_folder": "Select Save Folder",
+    "select_folder_desc": "Choose where to save the downloaded files.",
+    "unsupported_title": "Browser Compatibility Notice",
+    "unsupported_message": "Use Chrome or Edge for batch download with MD5 verification.",
+    "fallback_download": "Download",
+    "generating_link": "Generating link...",
+    "file_list": "File List",
+    "download_individual": "Individual Download"
   }
 }

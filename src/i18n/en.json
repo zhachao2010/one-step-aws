@@ -54,6 +54,8 @@
     "fallback_download": "Download",
     "generating_link": "Generating link...",
     "file_list": "File List",
-    "download_individual": "Individual Download"
+    "download_individual": "Individual Download",
+    "select_all": "Select All",
+    "deselect_all": "Deselect All"
   }
 }

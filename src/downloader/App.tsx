@@ -106,7 +106,7 @@ export default function App() {
     })();
   }, [t, buildProjectInfo]);
 
-  const handleStartStreaming = useCallback(async (dirHandle: FileSystemDirectoryHandle) => {
+  const handleStartStreaming = useCallback(async (dirHandle: FileSystemDirectoryHandle, selectedFiles: S3FileInfo[]) => {
     if (!params || !projectInfo || !clientRef.current) return;
     dirHandleRef.current = dirHandle;
     setPage("downloading");
@@ -117,7 +117,7 @@ export default function App() {
         client: clientRef.current,
         bucket: projectInfo.bucket,
         project: projectInfo.project,
-        files: projectInfo.files,
+        files: selectedFiles,
         dirHandle,
         concurrency: 3,
         onFileProgress: (fp) => {

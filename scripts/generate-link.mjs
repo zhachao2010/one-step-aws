@@ -48,8 +48,8 @@ function parseArgs() {
 }
 
 function isMd5File(key) {
-  const lower = key.toLowerCase();
-  return lower.endsWith(".md5") || lower.endsWith("md5.txt") || lower.endsWith("md5sum.txt");
+  const basename = (key.split("/").pop() ?? "").toLowerCase();
+  return basename.endsWith(".md5") || basename.startsWith("md5");
 }
 
 async function listFiles(client, bucket, project) {

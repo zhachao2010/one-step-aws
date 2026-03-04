@@ -341,7 +341,6 @@ async function buildInjectedHtml(ak, sk, bucket, region, project, expires) {
   const params = new URLSearchParams({ ak, sk, bucket, region });
   if (project) params.set('project', project);
   if (expires) params.set('expires', expires);
-
   const script = `<script>\nwindow.__INJECTED_SEARCH = "?${params.toString()}";\n<\/script>`;
   return html.replace('<head>', '<head>\n' + script);
 }

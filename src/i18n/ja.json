@@ -54,6 +54,8 @@
     "fallback_download": "ダウンロード",
     "generating_link": "リンク生成中...",
     "file_list": "ファイル一覧",
-    "download_individual": "個別ダウンロード"
+    "download_individual": "個別ダウンロード",
+    "select_all": "すべて選択",
+    "deselect_all": "すべて解除"
   }
 }

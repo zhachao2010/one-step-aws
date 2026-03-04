@@ -22,12 +22,8 @@ export function createS3Client(
 }
 
 export function isMd5File(key: string): boolean {
-  const lower = key.toLowerCase();
-  return (
-    lower.endsWith(".md5") ||
-    lower.endsWith("md5.txt") ||
-    lower.endsWith("md5sum.txt")
-  );
+  const basename = (key.split("/").pop() ?? "").toLowerCase();
+  return basename.endsWith(".md5") || basename.startsWith("md5");
 }
 
 export async function listProjectFiles(
@@ -83,10 +79,13 @@ export async function getObjectStream(
   client: S3Client,
   bucket: string,
   key: string,
+  rangeStart?: number,
 ): Promise<ReadableStream<Uint8Array>> {
-  const resp = await client.send(
-    new GetObjectCommand({ Bucket: bucket, Key: key }),
-  );
+  const params: { Bucket: string; Key: string; Range?: string } = { Bucket: bucket, Key: key };
+  if (rangeStart && rangeStart > 0) {
+    params.Range = `bytes=${rangeStart}-`;
+  }
+  const resp = await client.send(new GetObjectCommand(params));
   return resp.Body!.transformToWebStream() as ReadableStream<Uint8Array>;
 }
 

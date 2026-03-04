@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { formatBytes, daysUntil } from "../../lib/format";
 import type { S3FileInfo } from "../lib/types";
@@ -7,7 +8,7 @@ interface Props {
   expires: string | null;
   files: S3FileInfo[];
   totalSize: number;
-  onStartDownload: (dirHandle: FileSystemDirectoryHandle) => void;
+  onStartDownload: (dirHandle: FileSystemDirectoryHandle, selectedFiles: S3FileInfo[]) => void;
 }
 
 export default function StreamingDownload({
@@ -18,13 +19,47 @@ export default function StreamingDownload({
   onStartDownload,
 }: Props) {
   const { t } = useTranslation();
-  const dataFiles = files.filter((f) => !f.isMd5File);
+  const dataFiles = useMemo(() => files.filter((f) => !f.isMd5File), [files]);
+  const md5Files = useMemo(() => files.filter((f) => f.isMd5File), [files]);
   const days = expires ? daysUntil(expires) : null;
+
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(dataFiles.map((f) => f.key)),
+  );
+
+  const allSelected = selected.size === dataFiles.length;
+  const noneSelected = selected.size === 0;
+
+  const selectedSize = useMemo(
+    () => dataFiles.filter((f) => selected.has(f.key)).reduce((s, f) => s + f.size, 0),
+    [dataFiles, selected],
+  );
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(dataFiles.map((f) => f.key)));
+    }
+  };
+
+  const toggle = (key: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const handleSelectFolder = async () => {
     const dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
-    onStartDownload(dirHandle);
+    const selectedData = dataFiles.filter((f) => selected.has(f.key));
+    // Always include all md5 files for verification
+    onStartDownload(dirHandle, [...selectedData, ...md5Files]);
   };
+
+  const prefix = project.endsWith("/") ? project : `${project}/`;
 
   return (
     <div className="flex flex-col h-full p-6">
@@ -33,11 +68,18 @@ export default function StreamingDownload({
       <div className="space-y-3 mb-6">
         <div className="flex justify-between">
           <span className="text-gray-500">{t("project_info.file_count")}</span>
-          <span className="font-mono">{dataFiles.length}</span>
+          <span className="font-mono">
+            {selected.size} / {dataFiles.length}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">{t("project_info.total_size")}</span>
-          <span className="font-mono">{formatBytes(totalSize)}</span>
+          <span className="font-mono">
+            {formatBytes(selectedSize)}
+            {selected.size < dataFiles.length && (
+              <span className="text-gray-400"> / {formatBytes(totalSize)}</span>
+            )}
+          </span>
         </div>
         {expires && (
           <div className="flex justify-between">
@@ -55,22 +97,40 @@ export default function StreamingDownload({
       </div>
 
       <div className="flex-1 overflow-y-auto border rounded mb-6">
-        <div className="px-3 py-2 bg-gray-50 border-b text-sm font-medium text-gray-600">
-          {project}
+        <div className="px-3 py-2 bg-gray-50 border-b text-sm font-medium text-gray-600 flex items-center">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            ref={(el) => { if (el) el.indeterminate = !allSelected && !noneSelected; }}
+            onChange={toggleAll}
+            className="mr-2 w-4 h-4 accent-blue-600"
+          />
+          <span className="flex-1">{project}</span>
+          <button
+            onClick={toggleAll}
+            className="text-xs text-blue-600 hover:underline ml-2"
+          >
+            {allSelected ? t("browser.deselect_all") : t("browser.select_all")}
+          </button>
         </div>
         {dataFiles.map((f) => {
-          const prefix = project.endsWith("/") ? project : `${project}/`;
           const relPath = f.key.startsWith(prefix)
             ? f.key.slice(prefix.length)
             : f.key;
           return (
-            <div
+            <label
               key={f.key}
-              className="flex items-center px-3 py-2 border-b last:border-b-0 text-sm"
+              className="flex items-center px-3 py-2 border-b last:border-b-0 text-sm hover:bg-gray-50 cursor-pointer"
             >
+              <input
+                type="checkbox"
+                checked={selected.has(f.key)}
+                onChange={() => toggle(f.key)}
+                className="mr-2 w-4 h-4 accent-blue-600 shrink-0"
+              />
               <span className="flex-1 font-mono truncate">{relPath}</span>
               <span className="text-gray-500 ml-2">{formatBytes(f.size)}</span>
-            </div>
+            </label>
           );
         })}
       </div>
@@ -81,7 +141,7 @@ export default function StreamingDownload({
 
       <button
         onClick={handleSelectFolder}
-        disabled={days !== null && days <= 0}
+        disabled={noneSelected || (days !== null && days <= 0)}
         className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
       >
         {t("browser.select_folder")}

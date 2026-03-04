@@ -15,6 +15,11 @@ interface DownloadOptions {
   onOverallProgress?: (progress: OverallProgress) => void;
 }
 
+// Flush interval: close and reopen writable to commit partial data to disk.
+// FileSystemWritableFileStream uses a swap file — data is only persisted on close().
+// Without periodic flushing, all progress is lost if the page closes mid-download.
+const FLUSH_BYTES = 50 * 1024 * 1024; // 50MB
+
 class Semaphore {
   private queue: (() => void)[] = [];
   private running = 0;
@@ -67,7 +72,11 @@ export async function runDownload(
     onOverallProgress,
   } = options;
 
-  const prefix = project.endsWith("/") ? project : `${project}/`;
+  const prefix = project
+    ? project.endsWith("/")
+      ? project
+      : `${project}/`
+    : "";
 
   // Phase: listing
   onOverallProgress?.({
@@ -109,6 +118,18 @@ export async function runDownload(
   let totalDownloaded = 0;
   const overallStart = performance.now();
 
+  const emitOverall = () => {
+    const elapsed = (performance.now() - overallStart) / 1000;
+    onOverallProgress?.({
+      totalFiles: dataFiles.length,
+      completedFiles,
+      totalBytes,
+      downloadedBytes: totalDownloaded,
+      speedBps: elapsed > 0 ? Math.round(totalDownloaded / elapsed) : 0,
+      phase: "downloading",
+    });
+  };
+
   const semaphore = new Semaphore(concurrency);
   const results: VerifyResult[] = [];
 
@@ -128,54 +149,99 @@ export async function runDownload(
           ? await getOrCreateSubDir(dirHandle, dirParts.join("/"))
           : dirHandle;
 
-      // Create file handle
+      // Get or create file handle
       const fileHandle = await parentDir.getFileHandle(basename, {
         create: true,
       });
-      const writable = await fileHandle.createWritable();
 
-      // Stream from S3
-      const stream = await getObjectStream(client, bucket, file.key);
-      const reader = stream.getReader();
+      // Check existing file for resume
+      const existingFile = await fileHandle.getFile();
+      const existingSize = existingFile.size;
+      const isComplete = existingSize === file.size && existingSize > 0;
+      const isPartial = existingSize > 0 && existingSize < file.size;
+
+      console.log(
+        `[download] ${relPath}: local=${existingSize}, remote=${file.size}` +
+          (isComplete ? " → SKIP (complete)" : isPartial ? " → RESUME" : " → NEW"),
+      );
 
       const spark = new SparkMD5.ArrayBuffer();
       let downloaded = 0;
       const fileStart = performance.now();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        await writable.write(value as unknown as BufferSource);
-        spark.append(value.buffer as ArrayBuffer);
-        downloaded += value.byteLength;
-        totalDownloaded += value.byteLength;
-
-        const elapsed = (performance.now() - fileStart) / 1000;
-        const speed = elapsed > 0 ? downloaded / elapsed : 0;
+      // Read existing bytes into MD5 hasher
+      if ((isComplete || isPartial) && existingSize > 0) {
+        const existReader = existingFile.stream().getReader();
+        while (true) {
+          const { done, value } = await existReader.read();
+          if (done) break;
+          spark.append(value.buffer as ArrayBuffer);
+        }
+        downloaded = existingSize;
+        totalDownloaded += existingSize;
 
         onFileProgress?.({
           fileKey: relPath,
           downloaded,
           total: file.size,
-          speedBps: Math.round(speed),
+          speedBps: 0,
         });
-
-        // Update overall progress
-        const overallElapsed = (performance.now() - overallStart) / 1000;
-        const overallSpeed =
-          overallElapsed > 0 ? totalDownloaded / overallElapsed : 0;
-        onOverallProgress?.({
-          totalFiles: dataFiles.length,
-          completedFiles,
-          totalBytes,
-          downloadedBytes: totalDownloaded,
-          speedBps: Math.round(overallSpeed),
-          phase: "downloading",
-        });
+        emitOverall();
       }
 
-      await writable.close();
+      // Download remaining bytes if needed
+      if (!isComplete) {
+        let writable = isPartial
+          ? await fileHandle.createWritable({ keepExistingData: true })
+          : await fileHandle.createWritable();
+
+        if (isPartial) {
+          await writable.seek(existingSize);
+        }
+
+        const stream = await getObjectStream(
+          client,
+          bucket,
+          file.key,
+          isPartial ? existingSize : undefined,
+        );
+        const reader = stream.getReader();
+        let bytesSinceFlush = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          await writable.write(value as unknown as BufferSource);
+          spark.append(value.buffer as ArrayBuffer);
+          downloaded += value.byteLength;
+          totalDownloaded += value.byteLength;
+          bytesSinceFlush += value.byteLength;
+
+          const elapsed = (performance.now() - fileStart) / 1000;
+          const speed = elapsed > 0 ? downloaded / elapsed : 0;
+
+          onFileProgress?.({
+            fileKey: relPath,
+            downloaded,
+            total: file.size,
+            speedBps: Math.round(speed),
+          });
+          emitOverall();
+
+          // Periodic flush: commit partial data to disk so resume works
+          // after page close. close() commits the swap file, then we reopen.
+          if (bytesSinceFlush >= FLUSH_BYTES) {
+            await writable.close();
+            writable = await fileHandle.createWritable({ keepExistingData: true });
+            await writable.seek(downloaded);
+            bytesSinceFlush = 0;
+          }
+        }
+
+        await writable.close();
+      }
+
       completedFiles++;
 
       const md5Calc = spark.end();
@@ -197,6 +263,7 @@ export async function runDownload(
         calculated: md5Calc,
       };
     } catch (e) {
+      console.error(`[download] error for ${file.key}:`, e);
       return {
         fileKey: file.key,
         status: "error",

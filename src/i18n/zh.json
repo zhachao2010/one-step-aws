@@ -54,6 +54,8 @@
     "fallback_download": "下载",
     "generating_link": "正在生成链接...",
     "file_list": "文件列表",
-    "download_individual": "逐个下载"
+    "download_individual": "逐个下载",
+    "select_all": "全选",
+    "deselect_all": "取消全选"
   }
 }

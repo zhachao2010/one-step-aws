@@ -18,6 +18,7 @@
  */
 
 import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import zlib from "node:zlib";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -84,9 +85,10 @@ async function main() {
   const files = await listFiles(client, args.bucket, args.project);
   console.error(`Found ${files.length} files`);
 
-  // Encode manifest as base64url
+  // Compress and encode manifest as base64url with "z:" prefix
   const manifest = JSON.stringify(files);
-  const base64 = Buffer.from(manifest).toString("base64url");
+  const compressed = zlib.deflateSync(Buffer.from(manifest));
+  const base64 = "z:" + Buffer.from(compressed).toString("base64url");
 
   // Build URL
   const baseUrl = "https://zhachao2010.github.io/one-step-aws/downloader.html";

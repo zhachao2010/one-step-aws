@@ -9,7 +9,8 @@ export interface ParsedUrl {
 }
 
 function base64urlToBytes(b64: string): Uint8Array {
-  const std = b64.replace(/-/g, "+").replace(/_/g, "/");
+  let std = b64.replace(/-/g, "+").replace(/_/g, "/");
+  while (std.length % 4 !== 0) std += "=";
   const bin = atob(std);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -26,7 +27,9 @@ function decodeManifest(raw: string): S3FileInfo[] | null {
       json = pako.inflate(bytes, { to: "string" });
     } else {
       // Legacy uncompressed base64url
-      json = atob(raw.replace(/-/g, "+").replace(/_/g, "/"));
+      let std = raw.replace(/-/g, "+").replace(/_/g, "/");
+      while (std.length % 4 !== 0) std += "=";
+      json = atob(std);
     }
     const items = JSON.parse(json) as Array<{ k: string; s: number; m: number }>;
     return items.map((item) => ({

@@ -27,7 +27,8 @@ function parseArgs() {
     const key = args[i].replace(/^--/, "");
     result[key] = args[i + 1];
   }
-  for (const required of ["ak", "sk", "bucket", "region", "project"]) {
+  if (!result.project) result.project = "";
+  for (const required of ["ak", "sk", "bucket", "region"]) {
     if (!result[required]) {
       console.error(`Missing required argument: --${required}`);
       process.exit(1);
@@ -42,14 +43,14 @@ function isMd5File(key) {
 }
 
 async function listFiles(client, bucket, project) {
-  const prefix = project.endsWith("/") ? project : `${project}/`;
+  const prefix = project ? (project.endsWith("/") ? project : `${project}/`) : "";
   const files = [];
   let token;
 
   do {
     const resp = await client.send(new ListObjectsV2Command({
       Bucket: bucket,
-      Prefix: prefix,
+      ...(prefix ? { Prefix: prefix } : {}),
       MaxKeys: 1000,
       ContinuationToken: token,
     }));
@@ -97,8 +98,10 @@ async function main() {
     sk: args.sk,
     bucket: args.bucket,
     region: args.region,
-    project: args.project,
   });
+  if (args.project) {
+    params.set("project", args.project);
+  }
   if (args.expires) {
     params.set("expires", args.expires);
   }

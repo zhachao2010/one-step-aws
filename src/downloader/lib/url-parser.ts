@@ -53,7 +53,7 @@ export function parseUrlParams(search: string, hash: string): ParsedUrl {
     secretKey: get("sk"),
     bucket: get("bucket"),
     region: get("region"),
-    project: get("project"),
+    project: params.get("project") || "",
     expires: params.get("expires") || null,
   };
 

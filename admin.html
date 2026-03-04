@@ -114,10 +114,7 @@ small{color:#6b7280;font-size:.75rem}
       <button class="btn-copy" id="copyBtn" data-i18n="btn_copy">コピー</button>
       <button class="btn-test" id="testBtn" data-i18n="btn_test">リンクテスト</button>
     </div>
-    <p class="result-note" id="resultNote">
-      リンクは <span id="validDays"></span>日間有効です。<br>
-      S3アップロード結果は直接確認できないため、必ず「リンクテスト」で動作確認してください。
-    </p>
+    <p class="result-note" id="resultNote"></p>
   </div>
 </div>
 
@@ -193,7 +190,7 @@ function applyLang() {
   });
   $('langBtn').textContent = t('lang_toggle');
   // Update result note if visible
-  const days = $('validDays').textContent;
+  const days = $('resultNote').dataset.days;
   if (days) $('resultNote').innerHTML = t('result_note').replace('{days}', days);
 }
 
@@ -396,7 +393,7 @@ form.addEventListener('submit', async (e) => {
 
     setStatus(t('status_done'), 'success');
     urlOutput.value = url;
-    $('validDays').textContent = linkDays;
+    $('resultNote').dataset.days = linkDays;
     $('resultNote').innerHTML = t('result_note').replace('{days}', linkDays);
     resultEl.classList.add('show');
   } catch (err) {

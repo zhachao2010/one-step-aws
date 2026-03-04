@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneStep AWS - リンク生成</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans",sans-serif;background:#f5f7fa;color:#1a1a2e;line-height:1.6}
+.container{max-width:640px;margin:40px auto;padding:0 20px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+h1{font-size:1.5rem}
+.lang-sw{background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:.8rem;cursor:pointer;color:#444}
+.lang-sw:hover{background:#f0f0f0}
+.desc{margin-bottom:20px;font-size:.875rem;color:#666}
+.form-group{margin-bottom:14px}
+label{display:block;font-size:.875rem;font-weight:500;margin-bottom:4px;color:#444}
+input,select{width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:.875rem}
+input:focus,select:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.row{display:flex;gap:12px}
+.row>.form-group{flex:1}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:40px}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:#666;padding:4px}
+.btn-submit{width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:1rem;font-weight:500;cursor:pointer;margin-top:4px}
+.btn-submit:hover{background:#1d4ed8}
+.btn-submit:disabled{background:#93c5fd;cursor:not-allowed}
+#status{margin-top:16px;padding:12px;border-radius:6px;font-size:.875rem;display:none}
+#status.info{display:block;background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+#status.error{display:block;background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+#status.success{display:block;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+#result{margin-top:24px;display:none}
+#result.show{display:block}
+#result textarea{width:100%;height:80px;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:.75rem;font-family:monospace;resize:vertical}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn-row button{flex:1;padding:8px;border-radius:6px;font-size:.875rem;cursor:pointer;background:#fff}
+.btn-copy{color:#2563eb;border:1px solid #2563eb}
+.btn-copy:hover{background:#eff6ff}
+.btn-test{color:#059669;border:1px solid #059669}
+.btn-test:hover{background:#f0fdf4}
+small{color:#6b7280;font-size:.75rem}
+.result-note{margin-top:8px;font-size:.8rem;color:#6b7280;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1 data-i18n="title">OneStep AWS - リンク生成</h1>
+    <button class="lang-sw" id="langBtn">English</button>
+  </div>
+  <p class="desc" data-i18n="desc">S3のデータをダウンロードリンクに変換します。リンクを送るだけでブラウザからワンクリックダウンロード。</p>
+
+  <form id="form">
+    <div class="form-group">
+      <label data-i18n="lbl_ak">アクセスキー (Access Key)</label>
+      <input type="text" id="ak" required autocomplete="off" placeholder="AKIA...">
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="lbl_sk">シークレットキー (Secret Key)</label>
+      <div class="pw-wrap">
+        <input type="password" id="sk" required autocomplete="off">
+        <button type="button" class="pw-toggle" id="pwToggle" data-i18n="pw_show">Show</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label data-i18n="lbl_bucket">バケット (Bucket)</label>
+        <input type="text" id="bucket" required placeholder="my-bucket">
+      </div>
+      <div class="form-group">
+        <label data-i18n="lbl_region">リージョン (Region)</label>
+        <select id="region">
+          <option value="ap-northeast-1" selected>ap-northeast-1 (Tokyo)</option>
+          <option value="ap-northeast-3">ap-northeast-3 (Osaka)</option>
+          <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
+          <option value="us-east-1">us-east-1 (Virginia)</option>
+          <option value="us-west-2">us-west-2 (Oregon)</option>
+          <option value="eu-west-1">eu-west-1 (Ireland)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label data-i18n="lbl_project">プロジェクト (Project) <small data-i18n="hint_project">空欄=バケット全体</small></label>
+        <input type="text" id="project" placeholder="F26A420000060">
+      </div>
+      <div class="form-group">
+        <label data-i18n="lbl_expires">データ有効期限 <small data-i18n="hint_optional">任意</small></label>
+        <input type="date" id="expires">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="lbl_linkDays">リンク有効期間</label>
+      <select id="linkDays">
+        <option value="1" data-i18n="days_1">1日間</option>
+        <option value="3" data-i18n="days_3">3日間</option>
+        <option value="7" selected data-i18n="days_7">7日間</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn-submit" id="submitBtn" data-i18n="btn_generate">リンクを生成</button>
+  </form>
+
+  <div id="status"></div>
+
+  <div id="result">
+    <label style="margin-bottom:4px;display:block;font-weight:500" data-i18n="result_label">生成されたリンク</label>
+    <textarea id="urlOutput" readonly></textarea>
+    <div class="btn-row">
+      <button class="btn-copy" id="copyBtn" data-i18n="btn_copy">コピー</button>
+      <button class="btn-test" id="testBtn" data-i18n="btn_test">リンクテスト</button>
+    </div>
+    <p class="result-note" id="resultNote">
+      リンクは <span id="validDays"></span>日間有効です。<br>
+      S3アップロード結果は直接確認できないため、必ず「リンクテスト」で動作確認してください。
+    </p>
+  </div>
+</div>
+
+<script type="module">
+// ── i18n ──
+
+const i18n = {
+  ja: {
+    title: 'OneStep AWS - リンク生成',
+    desc: 'S3のデータをダウンロードリンクに変換します。リンクを送るだけでブラウザからワンクリックダウンロード。',
+    lbl_ak: 'アクセスキー (Access Key)',
+    lbl_sk: 'シークレットキー (Secret Key)',
+    lbl_bucket: 'バケット (Bucket)',
+    lbl_region: 'リージョン (Region)',
+    lbl_project: 'プロジェクト (Project) <small data-i18n="hint_project">空欄=バケット全体</small>',
+    lbl_expires: 'データ有効期限 <small data-i18n="hint_optional">任意</small>',
+    hint_project: '空欄=バケット全体',
+    hint_optional: '任意',
+    lbl_linkDays: 'リンク有効期間',
+    days_1: '1日間', days_3: '3日間', days_7: '7日間',
+    btn_generate: 'リンクを生成',
+    pw_show: 'Show', pw_hide: 'Hide',
+    btn_copy: 'コピー', btn_copy_done: 'コピーしました',
+    btn_test: 'リンクテスト',
+    result_label: '生成されたリンク',
+    result_note: 'リンクは {days}日間有効です。<br>S3アップロード結果は直接確認できないため、必ず「リンクテスト」で動作確認してください。',
+    status_template: 'テンプレートを取得中...',
+    status_upload: 'S3にアップロード中...',
+    status_presign: 'プリサインドURLを生成中...',
+    status_done: 'リンク生成完了',
+    status_error: 'エラー: ',
+    status_tpl_fail: 'テンプレート取得失敗',
+    lang_toggle: 'English',
+  },
+  en: {
+    title: 'OneStep AWS - Link Generator',
+    desc: 'Convert S3 data into a download link. Just share the link for one-click browser download.',
+    lbl_ak: 'Access Key',
+    lbl_sk: 'Secret Key',
+    lbl_bucket: 'Bucket',
+    lbl_region: 'Region',
+    lbl_project: 'Project <small data-i18n="hint_project">blank = entire bucket</small>',
+    lbl_expires: 'Data Expiry <small data-i18n="hint_optional">optional</small>',
+    hint_project: 'blank = entire bucket',
+    hint_optional: 'optional',
+    lbl_linkDays: 'Link Validity',
+    days_1: '1 day', days_3: '3 days', days_7: '7 days',
+    btn_generate: 'Generate Link',
+    pw_show: 'Show', pw_hide: 'Hide',
+    btn_copy: 'Copy', btn_copy_done: 'Copied!',
+    btn_test: 'Test Link',
+    result_label: 'Generated Link',
+    result_note: 'Link is valid for {days} day(s).<br>Upload result cannot be verified directly — please use "Test Link" to confirm.',
+    status_template: 'Fetching template...',
+    status_upload: 'Uploading to S3...',
+    status_presign: 'Generating presigned URL...',
+    status_done: 'Link generated!',
+    status_error: 'Error: ',
+    status_tpl_fail: 'Failed to fetch template',
+    lang_toggle: '日本語',
+  },
+};
+
+let lang = localStorage.getItem('osa_lang') || 'ja';
+
+function t(key) { return i18n[lang][key] || key; }
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[lang][key] !== undefined) el.innerHTML = i18n[lang][key];
+  });
+  $('langBtn').textContent = t('lang_toggle');
+  // Update result note if visible
+  const days = $('validDays').textContent;
+  if (days) $('resultNote').innerHTML = t('result_note').replace('{days}', days);
+}
+
+// ── SigV4 Utilities (Web Crypto API) ──
+
+async function hmacSha256(key, msg) {
+  const k = key instanceof ArrayBuffer ? key : new TextEncoder().encode(key);
+  const m = typeof msg === 'string' ? new TextEncoder().encode(msg) : msg;
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', k, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  return crypto.subtle.sign('HMAC', cryptoKey, m);
+}
+
+async function sha256(msg) {
+  const data = typeof msg === 'string' ? new TextEncoder().encode(msg) : msg;
+  return crypto.subtle.digest('SHA-256', data);
+}
+
+function toHex(buf) {
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getSigningKey(sk, dateStamp, region, service) {
+  let key = await hmacSha256('AWS4' + sk, dateStamp);
+  key = await hmacSha256(key, region);
+  key = await hmacSha256(key, service);
+  key = await hmacSha256(key, 'aws4_request');
+  return key;
+}
+
+function uriEncode(str, encodeSlash = true) {
+  const bytes = new TextEncoder().encode(str);
+  let out = '';
+  for (const b of bytes) {
+    const c = String.fromCharCode(b);
+    if (/[A-Za-z0-9_.~-]/.test(c)) {
+      out += c;
+    } else if (c === '/' && !encodeSlash) {
+      out += '/';
+    } else {
+      out += '%' + b.toString(16).toUpperCase().padStart(2, '0');
+    }
+  }
+  return out;
+}
+
+function randomHex(n) {
+  const bytes = new Uint8Array(n);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function getNow() {
+  const iso = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  return { amzDate: iso, dateStamp: iso.slice(0, 8) };
+}
+
+// ── S3 POST Object Upload ──
+
+async function uploadToS3(bucket, region, ak, sk, s3Key, htmlContent) {
+  const { amzDate, dateStamp } = getNow();
+  const credential = `${ak}/${dateStamp}/${region}/s3/aws4_request`;
+
+  const policy = {
+    expiration: new Date(Date.now() + 3600_000).toISOString(),
+    conditions: [
+      { bucket },
+      ['starts-with', '$key', '_dl/'],
+      ['starts-with', '$Content-Type', 'text/html'],
+      { 'x-amz-credential': credential },
+      { 'x-amz-algorithm': 'AWS4-HMAC-SHA256' },
+      { 'x-amz-date': amzDate },
+    ],
+  };
+
+  const policyB64 = btoa(JSON.stringify(policy));
+  const signingKey = await getSigningKey(sk, dateStamp, region, 's3');
+  const signature = toHex(await hmacSha256(signingKey, policyB64));
+
+  const fd = new FormData();
+  fd.append('key', s3Key);
+  fd.append('Content-Type', 'text/html; charset=utf-8');
+  fd.append('x-amz-credential', credential);
+  fd.append('x-amz-algorithm', 'AWS4-HMAC-SHA256');
+  fd.append('x-amz-date', amzDate);
+  fd.append('policy', policyB64);
+  fd.append('x-amz-signature', signature);
+  // file MUST be last in FormData
+  fd.append('file', new Blob([htmlContent], { type: 'text/html' }), 'downloader.html');
+
+  const endpoint = `https://${bucket}.s3.${region}.amazonaws.com/`;
+  await fetch(endpoint, { method: 'POST', body: fd, mode: 'no-cors' });
+}
+
+// ── Presigned GET URL ──
+
+async function generatePresignedUrl(bucket, region, ak, sk, s3Key, expiresIn) {
+  const { amzDate, dateStamp } = getNow();
+  const host = `${bucket}.s3.${region}.amazonaws.com`;
+  const credential = `${ak}/${dateStamp}/${region}/s3/aws4_request`;
+  const canonicalUri = '/' + uriEncode(s3Key, false);
+
+  // Query params must be sorted by key
+  const qp = [
+    ['X-Amz-Algorithm', 'AWS4-HMAC-SHA256'],
+    ['X-Amz-Credential', credential],
+    ['X-Amz-Date', amzDate],
+    ['X-Amz-Expires', String(expiresIn)],
+    ['X-Amz-SignedHeaders', 'host'],
+  ];
+  qp.sort((a, b) => a[0].localeCompare(b[0]));
+  const canonicalQS = qp.map(([k, v]) => uriEncode(k) + '=' + uriEncode(v)).join('&');
+
+  const canonicalRequest = [
+    'GET',
+    canonicalUri,
+    canonicalQS,
+    `host:${host}\n`,   // canonical headers (trailing \n required)
+    'host',              // signed headers
+    'UNSIGNED-PAYLOAD',
+  ].join('\n');
+
+  const scope = `${dateStamp}/${region}/s3/aws4_request`;
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    scope,
+    toHex(await sha256(canonicalRequest)),
+  ].join('\n');
+
+  const signingKey = await getSigningKey(sk, dateStamp, region, 's3');
+  const sig = toHex(await hmacSha256(signingKey, stringToSign));
+
+  return `https://${host}${canonicalUri}?${canonicalQS}&X-Amz-Signature=${sig}`;
+}
+
+// ── Template Injection ──
+
+async function buildInjectedHtml(ak, sk, bucket, region, project, expires) {
+  const resp = await fetch('template.html');
+  if (!resp.ok) throw new Error(`${t('status_tpl_fail')} (${resp.status})`);
+  let html = await resp.text();
+
+  const params = new URLSearchParams({ ak, sk, bucket, region });
+  if (project) params.set('project', project);
+  if (expires) params.set('expires', expires);
+
+  const script = `<script>\nwindow.__INJECTED_SEARCH = "?${params.toString()}";\n<\/script>`;
+  return html.replace('<head>', '<head>\n' + script);
+}
+
+// ── Form Handling ──
+
+const $ = (id) => document.getElementById(id);
+const form = $('form');
+const statusEl = $('status');
+const resultEl = $('result');
+const urlOutput = $('urlOutput');
+const submitBtn = $('submitBtn');
+
+// Restore saved values (not secret key)
+for (const id of ['ak', 'bucket', 'region']) {
+  const v = localStorage.getItem('osa_' + id);
+  if (v) $(id).value = v;
+}
+
+function setStatus(msg, cls) {
+  statusEl.textContent = msg;
+  statusEl.className = cls;
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const ak = $('ak').value.trim();
+  const sk = $('sk').value.trim();
+  const bucket = $('bucket').value.trim();
+  const region = $('region').value;
+  const project = $('project').value.trim();
+  const expires = $('expires').value;
+  const linkDays = parseInt($('linkDays').value);
+
+  // Persist non-sensitive fields
+  localStorage.setItem('osa_ak', ak);
+  localStorage.setItem('osa_bucket', bucket);
+  localStorage.setItem('osa_region', region);
+
+  submitBtn.disabled = true;
+  resultEl.classList.remove('show');
+
+  try {
+    setStatus(t('status_template'), 'info');
+    const html = await buildInjectedHtml(ak, sk, bucket, region, project, expires);
+
+    setStatus(t('status_upload'), 'info');
+    const s3Key = `_dl/${project || 'all'}-${randomHex(4)}.html`;
+    await uploadToS3(bucket, region, ak, sk, s3Key, html);
+
+    setStatus(t('status_presign'), 'info');
+    const url = await generatePresignedUrl(bucket, region, ak, sk, s3Key, linkDays * 86400);
+
+    setStatus(t('status_done'), 'success');
+    urlOutput.value = url;
+    $('validDays').textContent = linkDays;
+    $('resultNote').innerHTML = t('result_note').replace('{days}', linkDays);
+    resultEl.classList.add('show');
+  } catch (err) {
+    setStatus(t('status_error') + err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// ── UI Helpers ──
+
+$('pwToggle').addEventListener('click', () => {
+  const inp = $('sk');
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  $('pwToggle').textContent = show ? t('pw_hide') : t('pw_show');
+});
+
+$('copyBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(urlOutput.value);
+    $('copyBtn').textContent = t('btn_copy_done');
+    setTimeout(() => { $('copyBtn').textContent = t('btn_copy'); }, 2000);
+  } catch {
+    urlOutput.select();
+    document.execCommand('copy');
+  }
+});
+
+$('testBtn').addEventListener('click', () => {
+  window.open(urlOutput.value, '_blank');
+});
+
+$('langBtn').addEventListener('click', () => {
+  lang = lang === 'ja' ? 'en' : 'ja';
+  localStorage.setItem('osa_lang', lang);
+  applyLang();
+});
+
+// Init
+applyLang();
+</script>
+</body>
+</html>

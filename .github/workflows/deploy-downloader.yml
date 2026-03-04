@@ -12,6 +12,7 @@ on:
       - "vite.config.downloader.ts"
       - "package.json"
       - ".github/workflows/deploy-downloader.yml"
+      - "admin.html"
 
 permissions:
   contents: read
@@ -35,6 +36,10 @@ jobs:
       - run: npm ci
 
       - run: npm run build:downloader
+
+      - run: npm run build:single
+
+      - run: cp admin.html dist-downloader/admin.html && cp dist-single/downloader.html dist-downloader/template.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

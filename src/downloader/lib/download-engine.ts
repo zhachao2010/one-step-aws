@@ -92,13 +92,25 @@ export async function runDownload(
   const md5Files = files.filter((f) => f.isMd5File);
   const dataFiles = files.filter((f) => !f.isMd5File);
 
-  // Download and parse all MD5 files
+  // Download, save, and parse all MD5 files
   const md5Map = new Map<string, string>();
   for (const mf of md5Files) {
     const content = await getObjectText(client, bucket, mf.key);
     for (const [name, hash] of parseMd5Content(content)) {
       md5Map.set(name, hash);
     }
+    // Save MD5 file to disk
+    const relPath = mf.key.startsWith(prefix) ? mf.key.slice(prefix.length) : mf.key;
+    const basename = relPath.split("/").pop() ?? relPath;
+    const dirParts = relPath.split("/");
+    dirParts.pop();
+    const parentDir = dirParts.length > 0
+      ? await getOrCreateSubDir(dirHandle, dirParts.join("/"))
+      : dirHandle;
+    const fh = await parentDir.getFileHandle(basename, { create: true });
+    const w = await fh.createWritable();
+    await w.write(content);
+    await w.close();
   }
 
   const totalBytes = dataFiles.reduce((sum, f) => sum + f.size, 0);

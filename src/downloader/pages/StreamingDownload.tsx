@@ -133,6 +133,26 @@ export default function StreamingDownload({
             </label>
           );
         })}
+        {md5Files.map((f) => {
+          const relPath = f.key.startsWith(prefix)
+            ? f.key.slice(prefix.length)
+            : f.key;
+          return (
+            <div
+              key={f.key}
+              className="flex items-center px-3 py-2 border-b last:border-b-0 text-sm text-gray-400"
+            >
+              <input
+                type="checkbox"
+                checked
+                disabled
+                className="mr-2 w-4 h-4 shrink-0"
+              />
+              <span className="flex-1 font-mono truncate">{relPath}</span>
+              <span className="ml-2 text-xs">MD5</span>
+            </div>
+          );
+        })}
       </div>
 
       <p className="text-sm text-gray-500 mb-3">

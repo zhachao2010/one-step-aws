@@ -42,8 +42,18 @@ function decodeManifest(raw: string): S3FileInfo[] | null {
   }
 }
 
+declare global {
+  interface Window {
+    __INJECTED_SEARCH?: string;
+    __INJECTED_HASH?: string;
+  }
+}
+
 export function parseUrlParams(search: string, hash: string): ParsedUrl {
-  const params = new URLSearchParams(search);
+  // Support S3-hosted mode: injected params override URL
+  const effectiveSearch = window.__INJECTED_SEARCH || search;
+  const effectiveHash = window.__INJECTED_HASH || hash;
+  const params = new URLSearchParams(effectiveSearch);
 
   const get = (name: string): string => {
     const val = params.get(name);
@@ -60,7 +70,7 @@ export function parseUrlParams(search: string, hash: string): ParsedUrl {
     expires: params.get("expires") || null,
   };
 
-  const manifest = decodeManifest(hash.replace(/^#/, ""));
+  const manifest = decodeManifest(effectiveHash.replace(/^#/, ""));
 
   return { params: downloadParams, manifest };
 }

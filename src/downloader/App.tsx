@@ -71,20 +71,33 @@ export default function App() {
           }
         }
 
-        // If manifest is embedded in URL, use it directly (no CORS needed)
-        if (manifest && manifest.length > 0) {
-          setProjectInfo(buildProjectInfo(p, manifest));
-          setHasCors(false);
-          setPage("project-info");
-          return;
-        }
-
-        // No manifest — try S3 listing (needs CORS)
+        // Always create S3 client for streaming downloads
         const client = createS3Client(p.accessKey, p.secretKey, p.region);
         clientRef.current = client;
-        const files = await listProjectFiles(client, p.bucket, p.project);
+
+        // If manifest is embedded, use it; otherwise list from S3
+        let files: S3FileInfo[];
+        if (manifest && manifest.length > 0) {
+          files = manifest;
+        } else {
+          files = await listProjectFiles(client, p.bucket, p.project);
+        }
+
         setProjectInfo(buildProjectInfo(p, files));
-        setHasCors(true);
+
+        // Test if S3 fetch works (same-origin or CORS configured)
+        if (supportsFileSystemAccess && files.length > 0) {
+          try {
+            const testFile = files.find((f) => f.size < 10000) ?? files[0];
+            const { getObjectStream } = await import("./lib/s3-browser");
+            const stream = await getObjectStream(client, p.bucket, testFile.key);
+            stream.cancel();
+            setHasCors(true);
+          } catch {
+            setHasCors(false);
+          }
+        }
+
         setPage("project-info");
       } catch (e) {
         setError(String(e));
